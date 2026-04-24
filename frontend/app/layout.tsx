@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Manrope } from "next/font/google";
+import { JetBrains_Mono, Poppins } from "next/font/google";
 
 import "./globals.css";
 
-const fontSans = Manrope({
+const fontSans = Poppins({
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-sans",
 });
 

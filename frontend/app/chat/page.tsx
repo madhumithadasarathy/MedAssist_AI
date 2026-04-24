@@ -56,34 +56,34 @@ export default function ChatPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-mist via-white to-white px-4 py-6 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-surface-900 px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
         <div className="flex items-center justify-between">
           <div>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-sm font-medium text-slateblue/75 transition hover:text-teal"
+              className="inline-flex items-center gap-2 text-sm font-medium text-ink-muted transition hover:text-primary"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to home
             </Link>
-            <h1 className="mt-3 text-3xl font-semibold text-slateblue">MedAssist AI Chat</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-slateblue/75">
+            <h1 className="mt-3 text-3xl font-semibold text-ink">MedAssist AI Chat</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-ink-muted">
               Describe symptoms in natural language. Emergency red flags will trigger an urgent
               care warning. This tool does not replace a clinician.
             </p>
           </div>
         </div>
 
-        <section className="rounded-[2rem] border border-slateblue/10 bg-white p-4 shadow-panel sm:p-6">
+        <section className="rounded-[2rem] border border-surface-700 bg-surface-800 p-4 shadow-panel sm:p-6">
           <div className="space-y-4">
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={
                   message.role === "user"
-                    ? "ml-auto max-w-2xl rounded-[1.5rem] bg-slateblue px-4 py-3 text-sm leading-7 text-white"
-                    : "mr-auto max-w-3xl"
+                    ? "ml-auto max-w-2xl rounded-[1.5rem] bg-surface-700 px-4 py-3 text-sm leading-7 text-ink"
+                    : "mr-auto max-w-3xl text-ink"
                 }
               >
                 {message.role === "assistant" && message.payload ? (
@@ -95,16 +95,16 @@ export default function ChatPage() {
             ))}
 
             {loading ? (
-              <div className="max-w-xl rounded-[1.5rem] border border-teal/10 bg-mist px-4 py-3 text-sm text-slateblue/70">
+              <div className="max-w-xl rounded-[1.5rem] border border-primary/20 bg-surface-700 px-4 py-3 text-sm text-ink-muted">
                 Analyzing symptom patterns and retrieving related medical knowledge...
               </div>
             ) : null}
           </div>
 
-          <div className="mt-6 border-t border-slateblue/10 pt-4">
+          <div className="mt-6 border-t border-surface-700 pt-4">
             <ChatComposer onSend={handleSend} loading={loading} />
             {error ? (
-              <p className="mt-3 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+              <p className="mt-3 rounded-2xl bg-red-900/40 px-4 py-3 text-sm text-red-400">{error}</p>
             ) : null}
           </div>
         </section>
