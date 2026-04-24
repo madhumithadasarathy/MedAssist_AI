@@ -91,7 +91,7 @@ def predict(payload: ChatRequest) -> PredictResponse:
         )
 
     try:
-        predictions = classifier.predict_top_k(message, k=3)
+        predictions, _ = classifier.predict_top_k(message, k=3)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # pragma: no cover
@@ -101,7 +101,7 @@ def predict(payload: ChatRequest) -> PredictResponse:
         user_message=message,
         disclaimer=build_disclaimer(),
         possible_conditions=[
-            {"condition": item.condition, "confidence": item.confidence} for item in predictions
+            {"name": item.condition, "confidence": item.confidence} for item in predictions
         ],
     )
 
@@ -129,10 +129,7 @@ def search_medquad(payload: ChatRequest) -> SearchResponse:
             {
                 "question": doc.question,
                 "answer": doc.answer,
-                "source": doc.source,
-                "score": doc.score,
-                "focus": doc.focus,
-                "qtype": doc.qtype,
+                "score": doc.score
             }
             for doc in docs
         ],

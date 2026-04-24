@@ -36,7 +36,7 @@ class PredictResponse(BaseModel):
 class SearchResponse(BaseModel):
     query: str
     disclaimer: str
-    results: list[KnowledgeItem]
+    results: list[ConfiguredKnowledge]
 
 
 class HealthResponse(BaseModel):
