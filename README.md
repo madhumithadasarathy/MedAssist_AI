@@ -101,45 +101,43 @@ git remote add origin <repo-url>
 git push -u origin main
 ```
 
-## Deployment Instructions
+## Production Configuration (.env)
 
-### Frontend on Vercel
+The backend uses `python-dotenv` for configuration. Create a `.env` file in the `backend/` directory:
 
-- Import the `frontend/` directory as a Next.js project.
-- Set `NEXT_PUBLIC_API_URL` to your deployed backend URL.
-- If your backend enforces CORS, add the Vercel frontend domain to `ALLOWED_ORIGINS`.
-
-### Backend on Render, Railway, or Fly.io
-
-- Deploy the repository with Python 3.11.
-- Install `backend/requirements.txt`.
-- Start command:
-
-```bash
-uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+```env
+MODEL_PATH=./app/models/symptom_classifier.joblib
+LABEL_ENCODER_PATH=./app/models/label_encoder.joblib
+FAISS_PATH=./app/models/medquad_index
+ALLOWED_ORIGINS=https://your-frontend-domain.com,http://localhost:3000
 ```
 
-- Add environment variables from `backend/.env.example`.
-- Update `ALLOWED_ORIGINS` to include the production frontend URL.
+## Running with Docker (Recommended)
 
-## CORS Production Setup
+To launch the full production-ready stack (Frontend + Backend + Rate Limiting):
 
-- Keep localhost origins for development.
-- Add the exact frontend production domain, such as `https://your-app.vercel.app`.
-- Avoid using `*` for medical applications so you keep the API surface tighter.
+```bash
+docker compose up --build
+```
 
-## Model Evaluation & Overfitting
+## Deployment Steps
 
-The classification backend uses a strictly regularized Multi-Layer Perceptron (Neural Network) or highly balanced TF-IDF model architecture, avoiding brute force memorization.
+### Backend (Render / Railway)
+1. Set the **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+2. Add all environment variables from `backend/.env.example`.
+3. Ensure `python 3.11+` is selected.
 
-Due to the limited dataset size (<600 samples) vs high label density (44 exact medical targets), the model's absolute Top-1 accuracy naturally hovers strictly generalizing at ~67%. However, the system leverages calibrated Top-3 prediction arrays for incredible reliability exceeding 89% accuracy locally!
+### Frontend (Vercel)
+1. Import the `frontend` folder.
+2. Set `NEXT_PUBLIC_API_URL` to your deployed backend URL.
 
-![Evaluation Metrics](./evaluation_chart.png)
+## Technical Architecture & Stability
+- **Calibrated SVC:** LinearSVC wrapped in `CalibratedClassifierCV` to provide reliable probability metrics.
+- **Rate Limiting:** Built-in in-memory middleware restricts IPs to 30 requests per minute.
+- **Explainability:** TF-IDF weight extraction highlights "Why" the model made a specific prediction.
+- **RAG:** Context-aware medical knowledge retrieval via FAISS and sentence-transformers.
 
-## Known Limitations
+## Medical Disclaimer
 
-- The starter symptom dataset is intentionally small and not clinically reliable.
-- FAISS installation can require extra care on some Windows environments.
-- Sentence-transformer model download needs internet access during the first index build.
-- Confidence values are classifier probabilities, not medical certainty or calibrated risk.
-- MedQuAD retrieval quality depends on the processed dataset and embedding model.
+**MedAssist AI is an educational clinical decision-support tool. It does NOT provide medical diagnoses.** 
+Always verify findings with a licensed healthcare professional. In case of a medical emergency, contact local emergency services immediately.

@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     app_name: str = "MedAssist AI Backend"
     app_version: str = "0.1.0"
     api_prefix: str = "/api"
-    allowed_origins: list[str] = Field(
+    allowed_origins: str | list[str] = Field(
         default_factory=lambda: [
             "http://localhost:3000",
             "http://127.0.0.1:3000",

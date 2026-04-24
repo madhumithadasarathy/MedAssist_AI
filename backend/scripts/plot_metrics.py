@@ -22,6 +22,11 @@ def main():
     data = pd.read_csv(data_path).dropna(subset=["label", "text"]).copy()
     data["text"] = data["text"].astype(str).map(normalize_text)
     data["label"] = data["label"].astype(str).str.strip()
+    
+    # Filter to match training logic so transform doesn't fail on unseen labels
+    class_counts = data["label"].value_counts()
+    valid_classes = class_counts[class_counts >= 2].index
+    data = data[data["label"].isin(valid_classes)].copy()
 
     # Load model and encoder
     model_path = ROOT_DIR / "backend" / "app" / "models" / "symptom_classifier.joblib"

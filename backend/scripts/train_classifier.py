@@ -11,6 +11,7 @@ from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
+import numpy as np
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
@@ -42,69 +43,51 @@ def main() -> None:
     data["label"] = data["label"].astype(str).str.strip()
     data = data[data["text"].str.len() > 0]
 
+    # Filter out classes with only 1 sample as they can't be stratified
+    class_counts = data["label"].value_counts()
+    valid_classes = class_counts[class_counts >= 2].index
+    data = data[data["label"].isin(valid_classes)].copy()
+
     label_encoder = LabelEncoder()
     y = label_encoder.fit_transform(data["label"])
-    class_count = len(set(y))
-    test_size = max(0.2, class_count / max(len(data), 1))
-    if test_size >= 0.5:
-        raise ValueError(
-            "Dataset is too small for a stratified train/test split. Add more samples per class."
-        )
-
+    
     x_train, x_test, y_train, y_test = train_test_split(
         data["text"],
         y,
-        test_size=test_size,
+        test_size=0.2,
         random_state=42,
         stratify=y,
     )
 
-    from sklearn.neural_network import MLPClassifier
-    from sklearn.model_selection import StratifiedKFold, GridSearchCV
+    from sklearn.svm import LinearSVC
+    from sklearn.calibration import CalibratedClassifierCV
+    from sklearn.model_selection import StratifiedKFold
 
-    base_pipeline = Pipeline(
+    pipeline = Pipeline(
         steps=[
-            ("tfidf", TfidfVectorizer(ngram_range=(1, 2))),
+            ("tfidf", TfidfVectorizer(ngram_range=(1, 3), max_features=8000, stop_words='english')),
             (
                 "clf",
-                MLPClassifier(
-                    hidden_layer_sizes=(128,),
-                    max_iter=1000,
-                    random_state=42,
-                    early_stopping=True,
+                CalibratedClassifierCV(
+                    LinearSVC(class_weight='balanced', max_iter=2000, random_state=42),
+                    method='sigmoid',
+                    cv=2
                 ),
             ),
         ]
     )
 
-    param_grid = {
-        "tfidf__max_features": [1000],
-        "clf__alpha": [0.0001, 0.001],
-    }
-    
-    cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
-    grid_search = GridSearchCV(
-        base_pipeline, 
-        param_grid, 
-        cv=cv, 
-        scoring="accuracy", 
-        n_jobs=-1,
-        error_score="raise"
-    )
-    
-    print("Performing hyperparameter tuning on MLPClassifier...")
-    grid_search.fit(x_train, y_train)
-    
-    print(f"Best cross-validation accuracy: {grid_search.best_score_:.4f}")
-    
-    pipeline = grid_search.best_estimator_
+    print("Training Calibrated LinearSVC (cv=2) with optimized TF-IDF...")
+    pipeline.fit(x_train, y_train)
 
     predictions = pipeline.predict(x_test)
     accuracy = accuracy_score(y_test, predictions)
+    labels_in_test = np.unique(y_test)
     report = classification_report(
         y_test,
         predictions,
-        target_names=label_encoder.classes_,
+        target_names=label_encoder.inverse_transform(labels_in_test),
+        labels=labels_in_test,
         zero_division=0,
     )
 

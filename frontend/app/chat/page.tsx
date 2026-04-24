@@ -46,7 +46,7 @@ export default function ChatPage() {
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: response.assistant_response,
+        content: response.response,
         payload: response,
       };
       setMessages((current) => [...current, assistantMessage]);

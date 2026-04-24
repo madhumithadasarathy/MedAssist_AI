@@ -10,30 +10,22 @@ class ChatRequest(BaseModel):
 
 
 class PredictionItem(BaseModel):
-    condition: str
+    name: str = Field(alias="condition")
     confidence: float
 
-
-class KnowledgeItem(BaseModel):
+class ConfiguredKnowledge(BaseModel):
     question: str
     answer: str
-    source: str = "MedQuAD"
     score: float
-    focus: str | None = None
-    qtype: str | None = None
-
 
 class ChatResponse(BaseModel):
-    user_message: str
     emergency: bool
-    disclaimer: str
+    safety_message: str
     possible_conditions: list[PredictionItem]
-    knowledge_summary: list[KnowledgeItem]
-    assistant_response: str
-    suggested_next_steps: list[str]
-    urgent_care_reasons: list[str]
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
+    why: list[str]
+    explanations: list[ConfiguredKnowledge]
+    response: str
+    disclaimer: str
 
 class PredictResponse(BaseModel):
     user_message: str

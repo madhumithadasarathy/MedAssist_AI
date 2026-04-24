@@ -36,11 +36,37 @@ class SymptomClassifier:
         self.label_encoder = joblib.load(self.label_encoder_path)
         self.loaded = True
 
-    def predict_top_k(self, text: str, k: int = 3) -> list[Prediction]:
+
+    def predict_top_k(self, text: str, k: int = 3) -> tuple[list[Prediction], list[str]]:
         if not self.loaded or self.pipeline is None or self.label_encoder is None:
-            raise FileNotFoundError(
-                "Classifier artifacts were not found. Run backend/scripts/train_classifier.py first."
+            raise FileNotFoundError("Classifier artifacts were not found.")
+
+        cleaned = normalize_text(text)
+        probabilities = self.pipeline.predict_proba([cleaned])[0]
+        classes = np.asarray(self.pipeline.classes_)
+        top_indices = np.argsort(probabilities)[::-1][:k]
+
+        predictions: list[Prediction] = []
+        for index in top_indices:
+            label = classes[index]
+            decoded = self.label_encoder.inverse_transform([label])[0]
+            predictions.append(
+                Prediction(
+                    condition=str(decoded),
+                    confidence=round(float(probabilities[index] * 100), 2),
+                )
             )
+            
+        vectorizer = self.pipeline.named_steps.get("tfidf")
+        why_terms = []
+        if vectorizer:
+            tfidf_vec = vectorizer.transform([cleaned]).tocoo()
+            items = sorted(zip(tfidf_vec.col, tfidf_vec.data), key=lambda x: x[1], reverse=True)
+            feature_names = vectorizer.get_feature_names_out()
+            why_terms = [str(feature_names[idx]) for idx, _ in items[:3]]
+
+        return predictions, why_terms
+
 
         cleaned = normalize_text(text)
         probabilities = self.pipeline.predict_proba([cleaned])[0]

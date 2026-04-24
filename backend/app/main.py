@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+import logging
+import time
+from collections import defaultdict
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from .classifier import SymptomClassifier
@@ -18,19 +22,49 @@ from .schemas import (
 )
 
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 settings = get_settings()
 classifier = SymptomClassifier()
 retriever = MedQuadRetriever()
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
 
+origins = settings.allowed_origins
+if isinstance(origins, str):
+    if origins == "*":
+        origins = ["*"]
+    else:
+        origins = [o.strip() for o in origins.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Failed request to {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"error": {"message": str(exc), "code": "INTERNAL_ERROR"}}
+    )
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming {request.method} request to {request.url.path}")
+    response = await call_next(request)
+    return response
+
+@app.get("/ready")
+def ready() -> dict:
+    if classifier.loaded and retriever.loaded:
+        return {"status": "ok"}
+    raise HTTPException(status_code=503, detail="Services not fully loaded yet")
 
 
 @app.get("/", response_model=StatusResponse)
@@ -105,52 +139,42 @@ def search_medquad(payload: ChatRequest) -> SearchResponse:
     )
 
 
-@app.post(f"{settings.api_prefix}/chat", response_model=ChatResponse)
+@app.post("/api/chat", response_model=ChatResponse)
 def chat(payload: ChatRequest) -> ChatResponse:
     message = payload.message.strip()
     if len(message) < settings.min_symptom_length:
-        raise HTTPException(
-            status_code=400,
-            detail="Please share a few more details, such as symptoms, duration, severity, or age group.",
-        )
+        raise HTTPException(status_code=400, detail={"error": {"message": "Please share more details.", "code": "BAD_REQUEST"}})
 
     safety = detect_red_flags(message)
 
     try:
-        predictions = classifier.predict_top_k(message, k=3)
-        docs = retriever.search(message, top_k=3)
+        predictions, why_tokens = classifier.predict_top_k(message, k=3)
+        docs = []
+        try:
+            docs = retriever.search(message, top_k=3)
+        except Exception as rag_exc:
+            logger.warning(f"RAG failed securely, skipping: {rag_exc}")
+            
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except Exception as exc:  # pragma: no cover
-        raise HTTPException(status_code=500, detail="Chat processing failed.") from exc
-
-    assistant_response, next_steps, urgent_reasons = build_assistant_response(
-        message=message,
-        predictions=predictions,
-        docs=docs,
-        safety=safety,
-    )
+        raise HTTPException(status_code=503, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Chat processing failed.")
 
     return ChatResponse(
-        user_message=message,
         emergency=safety.emergency,
-        disclaimer=build_disclaimer(),
+        safety_message="Seek immediate medical help." if safety.emergency else "",
         possible_conditions=[
-            {"condition": item.condition, "confidence": item.confidence} for item in predictions
+            {"name": item.condition, "confidence": item.confidence / 100.0} for item in predictions
         ],
-        knowledge_summary=[
+        why=why_tokens,
+        explanations=[
             {
                 "question": doc.question,
                 "answer": doc.answer,
-                "source": doc.source,
-                "score": doc.score,
-                "focus": doc.focus,
-                "qtype": doc.qtype,
+                "score": doc.score
             }
             for doc in docs
         ],
-        assistant_response=assistant_response,
-        suggested_next_steps=next_steps,
-        urgent_care_reasons=urgent_reasons,
-        metadata={"matched_red_flags": safety.matched_red_flags},
+        response=f"Based on your symptoms, possible conditions may include {', '.join([p.condition for p in predictions])}. However, please note this is not definitive.",
+        disclaimer="This is not a medical diagnosis. Please consult a qualified healthcare professional."
     )
