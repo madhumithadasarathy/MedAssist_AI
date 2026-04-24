@@ -3,7 +3,7 @@ export type PredictionItem = {
   confidence: number;
 };
 
-export type KnowledgeItem = {
+export type ConfiguredKnowledge = {
   question: string;
   answer: string;
   score: number;
@@ -14,7 +14,7 @@ export type ChatResponse = {
   safety_message: string;
   possible_conditions: PredictionItem[];
   why: string[];
-  explanations: KnowledgeItem[];
+  explanations: ConfiguredKnowledge[];
   response: string;
   disclaimer: string;
 };

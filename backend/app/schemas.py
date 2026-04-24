@@ -38,6 +38,8 @@ class SearchResponse(BaseModel):
     disclaimer: str
     results: list[ConfiguredKnowledge]
 
+SearchResponse.model_rebuild()
+
 
 class HealthResponse(BaseModel):
     status: str
