@@ -1,0 +1,341 @@
+label,text
+Influenza,fever headache body pain chills sore throat tiredness for two days
+Influenza,high fever muscle aches dry cough fatigue and headache
+Influenza,body pain fever chills weakness and cough
+Influenza,i have been having high fever with body aches and chills since yesterday
+Influenza,fever with sore throat runny nose and muscle pain
+Influenza,sudden onset of fever muscle soreness and extreme tiredness
+Influenza,shivering high temperature headache and joint pain for three days
+Influenza,my whole body hurts and i have a fever and sore throat
+Influenza,fever fatigue dry cough and body aches after exposure to flu
+Influenza,i feel feverish with aching muscles and extreme exhaustion
+Common Cold,runny nose sneezing mild cough sore throat and congestion
+Common Cold,nasal congestion sneezing scratchy throat and watery eyes
+Common Cold,stuffy nose mild fever and cough with sore throat
+Common Cold,sneezing runny nose and a scratchy throat for a few days
+Common Cold,mild cough nasal congestion and sneezing without fever
+Common Cold,i keep sneezing and my nose is running with slight sore throat
+Common Cold,blocked nose watery eyes and constant sneezing
+Common Cold,mild cold symptoms with runny nose and slight cough
+Common Cold,nasal drip sore throat and mild headache
+Common Cold,i have congestion sneezing and my throat feels scratchy
+COVID-19,fever dry cough loss of smell fatigue and body aches
+COVID-19,sore throat fever cough taste loss and headache
+COVID-19,short fever cough fatigue and exposure to covid
+COVID-19,i cannot smell or taste anything and have fever and dry cough
+COVID-19,fever with body aches dry cough and loss of taste and smell
+COVID-19,persistent dry cough fever shortness of breath and fatigue
+COVID-19,headache fever loss of taste body pain and dry cough
+COVID-19,i tested positive and have fever cough and extreme tiredness
+COVID-19,difficulty breathing fever dry cough and chest tightness
+COVID-19,loss of smell taste fever and body aches after covid contact
+Migraine,severe headache nausea light sensitivity and throbbing pain
+Migraine,one sided headache vomiting and sensitivity to light
+Migraine,head pain with nausea aura and dizziness
+Migraine,throbbing headache on one side with nausea and light sensitivity
+Migraine,intense head pain behind one eye with visual disturbances
+Migraine,recurring severe headache with nausea and sound sensitivity
+Migraine,pounding headache that gets worse with light and movement
+Migraine,i have a terrible headache on one side with blurred vision and nausea
+Migraine,severe pulsating headache with vomiting and sensitivity to noise
+Migraine,headache with aura flashing lights and feeling sick
+Gastroenteritis,diarrhea vomiting stomach cramps nausea and fever
+Gastroenteritis,loose stools vomiting dehydration and abdominal cramps
+Gastroenteritis,nausea diarrhea stomach pain and body weakness
+Gastroenteritis,watery diarrhea vomiting and stomach cramps for two days
+Gastroenteritis,food poisoning symptoms with nausea vomiting and diarrhea
+Gastroenteritis,severe stomach cramps with frequent watery stools and vomiting
+Gastroenteritis,i have been vomiting and having diarrhea since last night
+Gastroenteritis,stomach bug with nausea loose motions and mild fever
+Gastroenteritis,abdominal pain diarrhea and feeling dehydrated
+Gastroenteritis,nausea cramping and frequent trips to the bathroom
+Urinary Tract Infection,burning urination lower abdominal discomfort and frequent urination
+Urinary Tract Infection,painful urination urgency cloudy urine and pelvic discomfort
+Urinary Tract Infection,frequent urination burning sensation and lower belly pain
+Urinary Tract Infection,it burns when i urinate and i feel the need to go frequently
+Urinary Tract Infection,cloudy urine with strong smell and pelvic pressure
+Urinary Tract Infection,painful and frequent urination with lower back pain
+Urinary Tract Infection,burning pain during urination and urgency to pee
+Urinary Tract Infection,i have pain and burning when peeing and my urine smells bad
+Urinary Tract Infection,frequent urge to urinate with discomfort and blood in urine
+Urinary Tract Infection,lower abdominal pain with burning urination and urgency
+Allergic Rhinitis,sneezing itchy eyes runny nose and nasal irritation
+Allergic Rhinitis,seasonal sneezing watery eyes and congestion
+Allergic Rhinitis,itchy nose sneezing and clear nasal discharge
+Allergic Rhinitis,sneezing fits with itchy watery eyes during spring
+Allergic Rhinitis,constant sneezing runny nose and itchy throat from allergies
+Allergic Rhinitis,nasal congestion sneezing and itchy eyes around pollen
+Allergic Rhinitis,i keep sneezing with itchy nose and eyes especially outdoors
+Allergic Rhinitis,allergic reaction with sneezing runny nose and red eyes
+Allergic Rhinitis,hay fever symptoms with congestion and sneezing
+Allergic Rhinitis,seasonal allergies causing runny nose sneezing and eye irritation
+Bronchitis,cough with mucus chest discomfort wheezing and tiredness
+Bronchitis,persistent cough chest congestion mild fever and mucus
+Bronchitis,wet cough fatigue and breathing discomfort
+Bronchitis,chronic cough producing yellow or green mucus and chest tightness
+Bronchitis,cough that won't go away with phlegm and chest soreness
+Bronchitis,productive cough with wheezing and shortness of breath
+Bronchitis,i have been coughing up mucus for over a week with chest pain
+Bronchitis,persistent cough with thick sputum and mild fever
+Bronchitis,chest congestion wheezing and a deep wet cough
+Bronchitis,cough with mucus production and feeling short of breath
+Diabetes,increased thirst frequent urination fatigue and blurred vision
+Diabetes,excessive hunger weight loss and frequent urination
+Diabetes,constant thirst dry mouth and tiredness with increased urination
+Diabetes,i feel thirsty all the time and urinate very frequently
+Diabetes,unexplained weight loss increased hunger and blurry vision
+Diabetes,fatigue frequent urination and slow healing of wounds
+Diabetes,numbness in hands and feet with excessive thirst and urination
+Diabetes,blurry vision tiredness and cuts that heal slowly
+Diabetes,increased urination at night with extreme thirst and fatigue
+Diabetes,dry skin frequent infections and constant tiredness
+Hypertension,headache dizziness shortness of breath and chest discomfort
+Hypertension,persistent headaches blurred vision and nosebleeds
+Hypertension,feeling dizzy with throbbing headache and fatigue
+Hypertension,high blood pressure with headache and ringing in ears
+Hypertension,dizziness nausea and severe headache from high blood pressure
+Hypertension,chest tightness shortness of breath and persistent headache
+Hypertension,vision problems headache and feeling lightheaded
+Hypertension,i have been having headaches and my blood pressure is high
+Hypertension,fatigue dizziness and pounding in chest or head
+Hypertension,nosebleeds headache and difficulty breathing
+Asthma,wheezing shortness of breath chest tightness and cough
+Asthma,difficulty breathing at night with wheezing and coughing
+Asthma,chest tightness wheezing and shortness of breath during exercise
+Asthma,coughing fits at night with wheezing and trouble breathing
+Asthma,i can't breathe properly and have wheezing with cough
+Asthma,shortness of breath triggered by cold air with wheezing
+Asthma,chest feels tight and i hear wheezing when breathing out
+Asthma,recurrent episodes of breathlessness and wheezing
+Asthma,difficulty breathing after physical activity with chest tightness
+Asthma,wheezing cough and feeling like i can't get enough air
+Pneumonia,high fever cough with phlegm chest pain and difficulty breathing
+Pneumonia,productive cough fever chills and sharp chest pain
+Pneumonia,fever shaking chills cough and shortness of breath
+Pneumonia,cough with rust colored sputum fever and breathing difficulty
+Pneumonia,high fever chest pain and cough with thick mucus
+Pneumonia,feeling very sick with fever cough and struggling to breathe
+Pneumonia,sharp pain when breathing deeply with fever and cough
+Pneumonia,severe cough with pus like phlegm and high temperature
+Pneumonia,rapid breathing fever cough and chest discomfort
+Pneumonia,i have high fever cough and pain when i take a deep breath
+Sinusitis,facial pain pressure around nose thick nasal discharge and headache
+Sinusitis,blocked nose yellowish discharge and pain around eyes and forehead
+Sinusitis,sinus pressure headache and thick green nasal mucus
+Sinusitis,facial pain especially when bending forward with nasal congestion
+Sinusitis,pain and pressure around nose and forehead with blocked nose
+Sinusitis,postnasal drip thick nasal discharge and facial tenderness
+Sinusitis,headache around eyes and cheeks with stuffy nose and mucus
+Sinusitis,i have pain around my sinuses with thick yellow discharge
+Sinusitis,congestion facial pressure and reduced sense of smell
+Sinusitis,sinus headache with pressure and thick colored nasal drainage
+Anxiety Disorder,persistent worry restlessness racing heart and sleep problems
+Anxiety Disorder,feeling nervous irritable and having trouble concentrating
+Anxiety Disorder,constant worrying muscle tension and difficulty sleeping
+Anxiety Disorder,racing thoughts panic attacks and feeling overwhelmed
+Anxiety Disorder,excessive anxiety with rapid heartbeat and sweating
+Anxiety Disorder,i feel anxious all the time with heart palpitations and tension
+Anxiety Disorder,restlessness trembling and feeling on edge constantly
+Anxiety Disorder,worry that interferes with daily life and causes insomnia
+Anxiety Disorder,panic episodes with shortness of breath and chest tightness
+Anxiety Disorder,chronic anxiety with nausea dizziness and difficulty focusing
+Depression,persistent sadness loss of interest fatigue and sleep changes
+Depression,feeling hopeless worthless and having no energy
+Depression,low mood difficulty concentrating and changes in appetite
+Depression,feeling empty tearful and unable to enjoy things
+Depression,loss of motivation persistent tiredness and withdrawal from activities
+Depression,i feel sad all the time and have no interest in anything
+Depression,difficulty sleeping feeling of guilt and loss of appetite
+Depression,hopelessness fatigue and trouble completing daily tasks
+Depression,emotional numbness social withdrawal and constant exhaustion
+Depression,depressed mood weight changes and difficulty concentrating
+Tonsillitis,sore throat difficulty swallowing swollen tonsils and fever
+Tonsillitis,painful throat red swollen tonsils and bad breath
+Tonsillitis,throat pain fever headache and white patches on tonsils
+Tonsillitis,difficulty swallowing with tender lymph nodes and fever
+Tonsillitis,sore throat with swollen glands and pain when swallowing
+Tonsillitis,i have very painful throat and can see white spots on my tonsils
+Tonsillitis,fever throat pain and enlarged tonsils with difficulty eating
+Tonsillitis,throat feels raw with swelling and mild ear pain
+Tonsillitis,red inflamed tonsils with fever and headache
+Tonsillitis,painful swallowing bad breath and swollen tonsils
+Strep Throat,sudden severe sore throat fever and swollen lymph nodes
+Strep Throat,painful throat without cough red spots on roof of mouth and fever
+Strep Throat,very painful sore throat with white patches and high fever
+Strep Throat,sudden onset throat pain swollen neck glands and headache
+Strep Throat,sore throat with fever body aches and no cough
+Strep Throat,i have a very sore throat with swollen glands and cannot eat
+Strep Throat,throat pain red tonsils with white streaks and fever
+Strep Throat,severe sore throat with nausea and tender lymph nodes
+Strep Throat,painful swallowing fever and red swollen throat
+Strep Throat,sudden sore throat with petechiae on palate and fever
+Ear Infection,ear pain hearing difficulty and fluid drainage from ear
+Ear Infection,throbbing ear pain fever and trouble hearing
+Ear Infection,pain inside ear with pressure and muffled hearing
+Ear Infection,i have sharp pain in my ear and feel like it is blocked
+Ear Infection,ear ache with fever and pulling at the ear
+Ear Infection,fluid leaking from ear with pain and reduced hearing
+Ear Infection,severe ear pain that worsens at night with fever
+Ear Infection,ear feels full with sharp pain and temporary hearing loss
+Ear Infection,ear pain with dizziness and headache
+Ear Infection,infection in ear causing pain swelling and discharge
+Conjunctivitis,red watery eyes itching and discharge from eyes
+Conjunctivitis,pink eye with crusting eyelids and tearing
+Conjunctivitis,eye redness burning sensation and yellowish discharge
+Conjunctivitis,itchy red eyes with swollen eyelids and watery discharge
+Conjunctivitis,both eyes are red and stuck together in the morning with discharge
+Conjunctivitis,eye irritation redness and sensitivity to light
+Conjunctivitis,i have red itchy eyes with pus like discharge
+Conjunctivitis,gritty sensation in eyes with redness and tearing
+Conjunctivitis,inflamed eyes with crusting and blurred vision
+Conjunctivitis,burning red eyes with sticky discharge and swelling
+Chickenpox,itchy rash with blisters fever and fatigue
+Chickenpox,red spots turning into fluid filled blisters all over body
+Chickenpox,fever followed by itchy rash and small blisters on skin
+Chickenpox,i have an itchy rash with tiny blisters and mild fever
+Chickenpox,rash starting on trunk spreading to face and limbs with fever
+Chickenpox,itchy spots turning into blisters and then crusting over
+Chickenpox,fever headache and rash with fluid filled vesicles
+Chickenpox,red bumpy rash that becomes blisters with severe itching
+Chickenpox,widespread itchy blister rash with tiredness and fever
+Chickenpox,marks and blisters appearing on skin with fever and malaise
+Dengue Fever,high fever severe headache pain behind eyes and joint pain
+Dengue Fever,fever with rash muscle pain and bleeding gums
+Dengue Fever,sudden high fever severe body pain and skin rash
+Dengue Fever,fever headache retro orbital pain and platelet drop
+Dengue Fever,i have very high fever with severe body and joint pain
+Dengue Fever,high temperature with rash nausea and extreme fatigue
+Dengue Fever,fever with bleeding nose muscle aches and bone pain
+Dengue Fever,severe headache high fever rash and abdominal pain
+Dengue Fever,breakbone fever with joint pain and skin eruptions
+Dengue Fever,sudden onset fever with petechial rash and body pain
+Malaria,recurring fever chills sweating headache and nausea
+Malaria,cyclic fever with shaking chills and profuse sweating
+Malaria,fever chills headache and vomiting after mosquito bites
+Malaria,i have periodic high fever with shivering and sweating
+Malaria,fever that comes and goes with chills and body weakness
+Malaria,high fever with rigors sweating and anemia
+Malaria,intermittent fever headache muscle pain and vomiting
+Malaria,chills followed by high fever and then sweating episodes
+Malaria,fever nausea vomiting and fatigue after travel to endemic area
+Malaria,cyclic pattern of fever with headache and body aches
+Typhoid,prolonged fever abdominal pain constipation and weakness
+Typhoid,sustained fever with headache and stomach pain for over a week
+Typhoid,high fever that increases daily with loss of appetite
+Typhoid,fever with rash on abdomen enlarged spleen and diarrhea
+Typhoid,persistent fever headache and abdominal discomfort
+Typhoid,i have had fever for over a week with stomach pain and weakness
+Typhoid,step ladder pattern fever with constipation and malaise
+Typhoid,sustained high temperature with coated tongue and abdominal tenderness
+Typhoid,fever weakness and diarrhea alternating with constipation
+Typhoid,prolonged fever with loss of appetite headache and body pain
+Tuberculosis,persistent cough lasting weeks with blood in sputum and weight loss
+Tuberculosis,night sweats fever weight loss and chronic cough
+Tuberculosis,cough with blood stained sputum fatigue and fever
+Tuberculosis,i have been coughing for weeks with night sweats and weight loss
+Tuberculosis,chronic cough fever and loss of appetite with chest pain
+Tuberculosis,persistent productive cough night sweats and extreme tiredness
+Tuberculosis,coughing up blood with prolonged fever and wasting
+Tuberculosis,gradual weight loss night sweats and persistent cough
+Tuberculosis,low grade fever cough with hemoptysis and weight loss
+Tuberculosis,chronic respiratory symptoms with fever sweating and cachexia
+Anemia,fatigue pale skin dizziness and shortness of breath
+Anemia,extreme tiredness weakness and pale complexion
+Anemia,feeling dizzy lightheaded and fatigued with pale nails
+Anemia,i feel very tired all the time and look pale
+Anemia,shortness of breath on exertion fatigue and rapid heartbeat
+Anemia,weakness cold hands and feet and brittle nails
+Anemia,persistent tiredness headache and difficulty concentrating
+Anemia,pale skin fatigue and feeling out of breath easily
+Anemia,low energy dizziness and pounding heart during activity
+Anemia,exhaustion pallor and poor exercise tolerance
+Gastritis,upper abdominal pain nausea bloating and burning stomach
+Gastritis,stomach pain after eating with nausea and indigestion
+Gastritis,burning sensation in upper stomach with bloating and belching
+Gastritis,i have a burning pain in my stomach especially after meals
+Gastritis,epigastric pain nausea and feeling of fullness
+Gastritis,stomach inflammation causing pain nausea and loss of appetite
+Gastritis,upper belly discomfort with acid reflux and bloating
+Gastritis,gnawing stomach pain with hiccups and nausea
+Gastritis,abdominal burning and discomfort with occasional vomiting
+Gastritis,stomach pain that worsens on empty stomach with nausea
+Irritable Bowel Syndrome,abdominal cramping bloating diarrhea and constipation
+Irritable Bowel Syndrome,alternating diarrhea and constipation with stomach cramps
+Irritable Bowel Syndrome,bloating gas and irregular bowel movements
+Irritable Bowel Syndrome,crampy abdominal pain relieved by bowel movement
+Irritable Bowel Syndrome,i have stomach cramps bloating and my bowels are very irregular
+Irritable Bowel Syndrome,frequent loose stools with abdominal pain and gas
+Irritable Bowel Syndrome,constipation and bloating with occasional diarrhea
+Irritable Bowel Syndrome,abdominal discomfort that comes and goes with mucus in stool
+Irritable Bowel Syndrome,cramping pain after eating with bloating and changed stools
+Irritable Bowel Syndrome,upset stomach with alternating bowel habits and flatulence
+Scabies,intense itching especially at night with burrow tracks on skin
+Scabies,itchy rash between fingers and on wrists with tiny bumps
+Scabies,severe nighttime itching with thin irregular lines on skin
+Scabies,i have intense itching at night with a rash on my hands and wrists
+Scabies,itchy bumps in skin folds and between fingers
+Scabies,pimple like rash with severe itching worse at night
+Scabies,contagious skin condition with itchy bumps and burrow marks
+Scabies,rash with crusting and intense itching on hands and body
+Scabies,small blisters and tracks on skin with nocturnal itching
+Scabies,persistent itching with tiny bumps in warm areas of body
+Eczema,dry itchy inflamed skin with red patches
+Eczema,skin rash with intense itching and cracking
+Eczema,red scaly patches on skin with severe itching
+Eczema,i have dry irritated skin that is very itchy and flaky
+Eczema,itchy rash on arms and behind knees with thickened skin
+Eczema,chronic skin inflammation with oozing and crusting
+Eczema,dry skin patches that worsen in cold weather with itching
+Eczema,rough bumpy skin with redness and irritation
+Eczema,skin condition causing itchiness redness and swelling
+Eczema,atopic dermatitis with dry cracked and inflamed skin
+Psoriasis,thick red patches with silvery scales on skin
+Psoriasis,scaly skin patches on elbows and knees with itching
+Psoriasis,raised red lesions covered with white silvery scales
+Psoriasis,i have thick scaly patches on my elbows that itch
+Psoriasis,skin plaques with silvery flaking on scalp and limbs
+Psoriasis,dry cracked skin that may bleed with thick patches
+Psoriasis,red inflamed skin with thick silvery scales
+Psoriasis,chronic skin condition with plaques on knees elbows and scalp
+Psoriasis,itchy painful skin patches with flaking and redness
+Psoriasis,autoimmune skin condition causing thick scaly lesions
+Kidney Stones,severe flank pain radiating to groin with nausea
+Kidney Stones,sharp pain in lower back and side with blood in urine
+Kidney Stones,excruciating pain that comes in waves with urinary urgency
+Kidney Stones,i have terrible pain in my side that comes and goes with bloody urine
+Kidney Stones,renal colic with nausea vomiting and painful urination
+Kidney Stones,sudden severe pain in back radiating to abdomen and groin
+Kidney Stones,sharp cramping pain in flank with pink or red urine
+Kidney Stones,intense pain in lower back with difficulty urinating
+Kidney Stones,severe side pain with nausea and cloudy smelly urine
+Kidney Stones,colicky pain with hematuria and frequent urination
+Appendicitis,sharp pain in lower right abdomen with nausea and fever
+Appendicitis,pain starting around navel moving to right lower side
+Appendicitis,sudden abdominal pain that gets worse with movement
+Appendicitis,i have severe pain in my lower right belly with nausea
+Appendicitis,right sided abdominal pain with loss of appetite and fever
+Appendicitis,sharp pain in right lower quadrant with vomiting
+Appendicitis,abdominal tenderness fever and pain worse when walking
+Appendicitis,pain around belly button that shifted to lower right with nausea
+Appendicitis,intense right sided abdominal pain with constipation or diarrhea
+Appendicitis,sudden onset lower right abdominal pain with rebound tenderness
+Vertigo,spinning sensation dizziness nausea and balance problems
+Vertigo,room feels like it is spinning with nausea and vomiting
+Vertigo,sudden onset dizziness with difficulty standing and nausea
+Vertigo,i feel like everything is spinning around me and i feel sick
+Vertigo,episodes of spinning sensation triggered by head movement
+Vertigo,intense dizziness with ringing in ears and nausea
+Vertigo,balance problems with sensation of movement when still
+Vertigo,feeling of spinning with sweating and unsteadiness
+Vertigo,recurrent episodes of rotational dizziness with hearing changes
+Vertigo,sudden severe dizziness with vomiting and difficulty walking
+Gout,sudden severe joint pain especially in big toe with swelling
+Gout,red hot swollen joint with intense pain usually at night
+Gout,painful inflamed big toe joint with tenderness
+Gout,i woke up with my big toe extremely swollen red and painful
+Gout,acute joint pain with warmth and swelling in affected area
+Gout,sudden onset severe pain in foot joint with redness
+Gout,intense throbbing pain in big toe with shiny red skin
+Gout,painful swollen joint that is too tender to touch
+Gout,recurrent attacks of joint inflammation and severe pain
+Gout,crystal arthritis with sudden painful swelling in toe or ankle

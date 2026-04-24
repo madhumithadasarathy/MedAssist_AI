@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Node
+node_modules/
+.next/
+
+# Environment
+.env
+backend/.env
+frontend/.env.local
+
+# Build artifacts
+dist/
+build/
+
+# Model artifacts
+backend/app/models/*.joblib
+backend/app/models/medquad_index/*
+!backend/app/models/medquad_index/.gitkeep

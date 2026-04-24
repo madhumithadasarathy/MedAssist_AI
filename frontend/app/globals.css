@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-white text-ink antialiased;
+  background-image:
+    radial-gradient(circle at top left, rgba(189, 239, 242, 0.55), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(239, 248, 251, 0.95), transparent 35%);
+}
+
+.medical-grid {
+  background-image: theme("backgroundImage.medical-grid");
+  background-size: 20px 20px;
+}
