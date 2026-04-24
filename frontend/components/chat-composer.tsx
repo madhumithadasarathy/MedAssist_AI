@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { SendHorizontal } from "lucide-react";
+import { FormEvent, useState, useRef, useEffect } from "react";
+import { ArrowUp } from "lucide-react";
 
 type ChatComposerProps = {
   onSend: (message: string) => Promise<void>;
@@ -11,18 +11,25 @@ type ChatComposerProps = {
 export function ChatComposer({ onSend, loading }: ChatComposerProps) {
   const [message, setMessage] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  }, [message]);
+
+  const handleSubmit = async (event: FormEvent | React.KeyboardEvent) => {
     event.preventDefault();
     const trimmed = message.trim();
 
     if (!trimmed) {
-      setValidationError("Please enter symptoms before sending.");
       return;
     }
 
     if (trimmed.length < 12) {
-      setValidationError("Please provide a bit more detail, such as duration, severity, or other symptoms.");
+      setValidationError("Please provide a bit more detail (duration, severity, etc).");
       return;
     }
 
@@ -32,34 +39,41 @@ export function ChatComposer({ onSend, loading }: ChatComposerProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <label className="block">
-        <span className="sr-only">Describe your symptoms</span>
-        <textarea
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-          rows={4}
-          placeholder="Example: I have fever, body pain, sore throat, and fatigue for the past two days."
-          className="w-full rounded-[1.5rem] border border-surface-700 bg-surface-800 px-4 py-3 text-sm text-ink shadow-sm outline-none transition placeholder:text-ink-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
-          disabled={loading}
-        />
-      </label>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs leading-6 text-ink-muted">
-          Do not use this app for emergencies. Seek urgent care for chest pain, trouble breathing,
-          seizures, stroke symptoms, severe bleeding, or self-harm risk.
-        </p>
-        <button
-          type="submit"
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primaryHover disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <SendHorizontal className="h-4 w-4" />
-          {loading ? "Thinking..." : "Send"}
-        </button>
+    <form onSubmit={handleSubmit} className="relative flex w-full flex-col items-center">
+      <div className="relative flex w-full max-w-3xl items-end rounded-[1.5rem] bg-surface-800 shadow-panel transition-all focus-within:ring-2 focus-within:ring-primary/20">
+        <label className="flex w-full cursor-text">
+          <span className="sr-only">Describe your symptoms</span>
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            rows={1}
+            placeholder="Message MedAssist AI..."
+            className="w-full resize-none border-none bg-transparent px-5 py-4 text-[0.95rem] text-ink outline-none placeholder:text-ink-muted"
+            style={{ minHeight: '56px', maxHeight: '200px' }}
+            disabled={loading}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+          />
+        </label>
+        <div className="pointer-events-none absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center">
+          <button
+            type="submit"
+            disabled={loading || !message.trim()}
+            className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full bg-ink text-surface-900 transition hover:bg-ink-muted disabled:cursor-not-allowed disabled:opacity-20"
+          >
+            <ArrowUp className="h-4 w-4 shrink-0" strokeWidth={3} />
+          </button>
+        </div>
       </div>
       {validationError ? (
-        <p className="rounded-2xl bg-amber-900/30 px-4 py-3 text-sm text-amber-500">{validationError}</p>
+        <p className="absolute -top-10 rounded-full bg-amber-900/40 px-4 py-2 text-xs font-medium text-amber-500">
+          {validationError}
+        </p>
       ) : null}
     </form>
   );
