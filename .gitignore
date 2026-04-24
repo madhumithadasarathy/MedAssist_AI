@@ -19,6 +19,6 @@ dist/
 build/
 
 # Model artifacts
-backend/app/models/*.joblib
+# backend/app/models/*.joblib
 backend/app/models/medquad_index/*
 !backend/app/models/medquad_index/.gitkeep
