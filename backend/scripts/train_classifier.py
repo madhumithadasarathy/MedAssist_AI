@@ -59,19 +59,43 @@ def main() -> None:
         stratify=y,
     )
 
-    pipeline = Pipeline(
+    from sklearn.model_selection import GridSearchCV, StratifiedKFold
+
+    base_pipeline = Pipeline(
         steps=[
-            ("tfidf", TfidfVectorizer(ngram_range=(1, 2), max_features=12000)),
+            ("tfidf", TfidfVectorizer(ngram_range=(1, 2))),
             (
                 "clf",
                 LogisticRegression(
-                    max_iter=1500,
+                    max_iter=2500,
                     class_weight="balanced",
                 ),
             ),
         ]
     )
-    pipeline.fit(x_train, y_train)
+
+    param_grid = {
+        "tfidf__max_features": [5000, 15000, None],
+        "clf__C": [0.5, 1.0, 10.0, 50.0]
+    }
+    
+    cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+    grid_search = GridSearchCV(
+        base_pipeline, 
+        param_grid, 
+        cv=cv, 
+        scoring="accuracy", 
+        n_jobs=-1,
+        error_score="raise"
+    )
+    
+    print("Performing hyperparameter tuning via GridSearchCV...")
+    grid_search.fit(x_train, y_train)
+    
+    print(f"Best cross-validation accuracy: {grid_search.best_score_:.4f}")
+    print(f"Best parameters: {grid_search.best_params_}")
+    
+    pipeline = grid_search.best_estimator_
 
     predictions = pipeline.predict(x_test)
     accuracy = accuracy_score(y_test, predictions)

@@ -46,11 +46,17 @@ def main() -> None:
     predictions = classifier.pipeline.predict(x_test)
 
     print(f"Accuracy: {accuracy_score(y_test, predictions):.4f}")
-    print(f"Top-3 accuracy: {top_k_accuracy_score(y_test, probabilities, k=3):.4f}")
+    if len(label_encoder.classes_) >= 3:
+        try:
+            print(f"Top-3 accuracy: {top_k_accuracy_score(y_test, probabilities, k=3, labels=range(len(label_encoder.classes_))):.4f}")
+        except Exception as e:
+            pass
+            
     print(
         classification_report(
             y_test,
             predictions,
+            labels=range(len(label_encoder.classes_)),
             target_names=label_encoder.classes_,
             zero_division=0,
         )
