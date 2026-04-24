@@ -23,7 +23,7 @@ class Settings(BaseSettings):
             "http://127.0.0.1:3000",
         ]
     )
-    model_path: Path = MODELS_DIR / "symptom_classifier.joblib"
+    classifier_path: Path = MODELS_DIR / "trained_model.joblib"
     label_encoder_path: Path = MODELS_DIR / "label_encoder.joblib"
     medquad_index_dir: Path = MODELS_DIR / "medquad_index"
     medquad_processed_path: Path = DATA_DIR / "medquad_processed.csv"

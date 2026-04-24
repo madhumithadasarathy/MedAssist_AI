@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import logging
+import os
+import sys
 import time
+from pathlib import Path
 from collections import defaultdict
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -21,7 +24,7 @@ from .schemas import (
     StatusResponse,
 )
 
-
+# Configuration
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -31,6 +34,52 @@ retriever = MedQuadRetriever()
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
 
+# Global status flags
+classifier_loaded = False
+rag_loaded = False
+
+@app.on_event("startup")
+def startup_event():
+    """Synchronous startup event to ensure artifacts load before traffic."""
+    global classifier_loaded, rag_loaded
+    
+    logger.info("🚀 STARTUP TRIGGERED")
+    logger.info(f"🚀 PORT FROM ENV: {os.getenv('PORT')}")
+    logger.info(f"🚀 PYTHON VERSION: {sys.version}")
+
+    BASE_DIR = Path(__file__).resolve().parent
+    models_dir = BASE_DIR / "models"
+
+    logger.info(f"📂 BASE_DIR: {BASE_DIR}")
+    logger.info(f"📂 MODELS_DIR: {models_dir}")
+
+    model_path = models_dir / "trained_model.joblib"
+    encoder_path = models_dir / "label_encoder.joblib"
+    faiss_path = models_dir / "medquad_index"
+
+    logger.info(f"📂 CLASSIFIER PATH: {model_path} | EXISTS: {model_path.exists()}")
+    logger.info(f"📂 ENCODER PATH: {encoder_path} | EXISTS: {encoder_path.exists()}")
+    logger.info(f"📂 FAISS PATH: {faiss_path} | EXISTS: {faiss_path.exists()}")
+
+    try:
+        if model_path.exists() and encoder_path.exists():
+            classifier.load()
+            classifier_loaded = classifier.loaded
+            logger.info(f"✅ CLASSIFIER LOADED: {classifier_loaded}")
+        else:
+            logger.error("❌ CLASSIFIER OR ENCODER FILE NOT FOUND AT SPECIFIED PATHS")
+
+        if faiss_path.exists():
+            retriever.load()
+            rag_loaded = retriever.loaded
+            logger.info(f"✅ RAG LOADED: {rag_loaded}")
+        else:
+            logger.error("❌ FAISS INDEX NOT FOUND AT SPECIFIED PATHS")
+
+    except Exception as e:
+        logger.error(f"🔥 ERROR DURING STARTUP: {e}", exc_info=True)
+
+# CORS
 origins = settings.allowed_origins
 if isinstance(origins, str):
     if origins == "*":
@@ -60,118 +109,95 @@ async def log_requests(request: Request, call_next):
     response = await call_next(request)
     return response
 
+# Routes
 @app.get("/ready")
 def ready() -> dict:
-    if classifier.loaded and retriever.loaded:
+    if classifier_loaded and rag_loaded:
         return {"status": "ok"}
     raise HTTPException(status_code=503, detail="Services not fully loaded yet")
-
 
 @app.get("/", response_model=StatusResponse)
 def root() -> StatusResponse:
     return StatusResponse(name=settings.app_name, status="ok", version=settings.app_version)
 
-
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
+    logger.info(f"Health check: Model={classifier_loaded}, RAG={rag_loaded}")
     return HealthResponse(
-        status="healthy",
-        model_loaded=classifier.loaded,
-        rag_loaded=retriever.loaded,
+        status="healthy" if classifier_loaded and rag_loaded else "degraded",
+        is_model_loaded=classifier_loaded,
+        rag_loaded=rag_loaded,
     )
 
+@app.get("/debug-paths")
+def debug_paths():
+    BASE_DIR = Path(__file__).resolve().parent
+    models_dir = BASE_DIR / "models"
+    return {
+        "base_dir": str(BASE_DIR),
+        "models_dir": str(models_dir),
+        "model_exists": (models_dir / "trained_model.joblib").exists(),
+        "encoder_exists": (models_dir / "label_encoder.joblib").exists(),
+        "faiss_exists": (models_dir / "medquad_index").exists(),
+        "cwd": os.getcwd(),
+        "python_version": sys.version,
+        "sys_path": sys.path,
+        "files_in_models": os.listdir(str(models_dir)) if models_dir.exists() else []
+    }
 
 @app.post(f"{settings.api_prefix}/predict", response_model=PredictResponse)
 def predict(payload: ChatRequest) -> PredictResponse:
     message = payload.message.strip()
-    if len(message) < settings.min_symptom_length:
-        raise HTTPException(
-            status_code=400,
-            detail="Please provide a little more detail about symptoms, duration, and severity.",
-        )
-
+    if not classifier_loaded:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    
     try:
         predictions, _ = classifier.predict_top_k(message, k=3)
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except Exception as exc:  # pragma: no cover
-        raise HTTPException(status_code=500, detail="Prediction failed.") from exc
-
-    return PredictResponse(
-        user_message=message,
-        disclaimer=build_disclaimer(),
-        possible_conditions=[
-            {"name": item.condition, "confidence": item.confidence} for item in predictions
-        ],
-    )
-
+        return PredictResponse(
+            user_message=message,
+            disclaimer=build_disclaimer(),
+            possible_conditions=[
+                {"name": item.condition, "confidence": item.confidence} for item in predictions
+            ],
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 @app.post(f"{settings.api_prefix}/search-medquad", response_model=SearchResponse)
 def search_medquad(payload: ChatRequest) -> SearchResponse:
     message = payload.message.strip()
-    if len(message) < settings.min_symptom_length:
-        raise HTTPException(
-            status_code=400,
-            detail="Please provide more details so the medical knowledge search has useful context.",
-        )
-
+    if not rag_loaded:
+        raise HTTPException(status_code=503, detail="RAG system not loaded")
+    
     try:
         docs = retriever.search(message, top_k=3)
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except Exception as exc:  # pragma: no cover
-        raise HTTPException(status_code=500, detail="Knowledge search failed.") from exc
-
-    return SearchResponse(
-        query=message,
-        disclaimer=build_disclaimer(),
-        results=[
-            {
-                "question": doc.question,
-                "answer": doc.answer,
-                "score": doc.score
-            }
-            for doc in docs
-        ],
-    )
-
+        return SearchResponse(
+            query=message,
+            disclaimer=build_disclaimer(),
+            results=[{"question": d.question, "answer": d.answer, "score": d.score} for d in docs],
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(payload: ChatRequest) -> ChatResponse:
     message = payload.message.strip()
-    if len(message) < settings.min_symptom_length:
-        raise HTTPException(status_code=400, detail={"error": {"message": "Please share more details.", "code": "BAD_REQUEST"}})
-
     safety = detect_red_flags(message)
 
     try:
         predictions, why_tokens = classifier.predict_top_k(message, k=3)
-        docs = []
-        try:
-            docs = retriever.search(message, top_k=3)
-        except Exception as rag_exc:
-            logger.warning(f"RAG failed securely, skipping: {rag_exc}")
-            
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=503, detail=str(exc))
+        docs = retriever.search(message, top_k=3) if rag_loaded else []
+        
+        return ChatResponse(
+            emergency=safety.emergency,
+            safety_message="Seek immediate medical help." if safety.emergency else "",
+            possible_conditions=[
+                {"name": item.condition, "confidence": item.confidence / 100.0} for item in predictions
+            ],
+            why=why_tokens,
+            explanations=[{"question": d.question, "answer": d.answer, "score": d.score} for d in docs],
+            response=f"Based on your symptoms, possible conditions may include {', '.join([p.condition for p in predictions])}.",
+            disclaimer=build_disclaimer()
+        )
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="Chat processing failed.")
-
-    return ChatResponse(
-        emergency=safety.emergency,
-        safety_message="Seek immediate medical help." if safety.emergency else "",
-        possible_conditions=[
-            {"name": item.condition, "confidence": item.confidence / 100.0} for item in predictions
-        ],
-        why=why_tokens,
-        explanations=[
-            {
-                "question": doc.question,
-                "answer": doc.answer,
-                "score": doc.score
-            }
-            for doc in docs
-        ],
-        response=f"Based on your symptoms, possible conditions may include {', '.join([p.condition for p in predictions])}. However, please note this is not definitive.",
-        disclaimer="This is not a medical diagnosis. Please consult a qualified healthcare professional."
-    )
+        raise HTTPException(status_code=500, detail=str(exc))

@@ -43,7 +43,7 @@ SearchResponse.model_rebuild()
 
 class HealthResponse(BaseModel):
     status: str
-    model_loaded: bool
+    is_model_loaded: bool
     rag_loaded: bool
 
 
