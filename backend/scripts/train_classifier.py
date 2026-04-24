@@ -75,8 +75,9 @@ def main() -> None:
     )
 
     param_grid = {
-        "tfidf__max_features": [5000, 15000, None],
-        "clf__C": [0.5, 1.0, 10.0, 50.0]
+        "tfidf__max_features": [500, 1000, 2000],
+        "tfidf__ngram_range": [(1, 1), (1, 2)],
+        "clf__C": [0.01, 0.1, 0.5, 1.0]
     }
     
     cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
@@ -89,7 +90,7 @@ def main() -> None:
         error_score="raise"
     )
     
-    print("Performing hyperparameter tuning via GridSearchCV...")
+    print("Performing hyperparameter tuning via GridSearchCV (Targeting reduced Overfitting)...")
     grid_search.fit(x_train, y_train)
     
     print(f"Best cross-validation accuracy: {grid_search.best_score_:.4f}")
