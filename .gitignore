@@ -20,5 +20,7 @@ build/
 
 # Model artifacts
 # backend/app/models/*.joblib
-backend/app/models/medquad_index/*
+backend/app/models/medquad_index/*.pycache
 !backend/app/models/medquad_index/.gitkeep
+!backend/app/models/medquad_index/index.faiss
+!backend/app/models/medquad_index/metadata.json
