@@ -7,13 +7,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies first for better caching
+# Install CPU-only PyTorch first to avoid pulling ~2.5GB of CUDA libraries
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Cache bust Argument
-ARG CACHE_BUST=1
-RUN echo "Cache bust: $CACHE_BUST"
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
 COPY . .
