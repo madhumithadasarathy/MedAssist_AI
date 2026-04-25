@@ -35,16 +35,30 @@ class MedQuadRetriever:
         self.index_dir = index_dir or self.settings.faiss_index_path
         self.index = None
         self.metadata: list[dict[str, str]] = []
-        self.encoder = None # Deferred loading
+        self._encoder = None # Lazy loading
         self.loaded = False
         self.semantic_active = False
         self.load()
 
+    def _get_encoder(self):
+        """Lazy loading of SentenceTransformer on CPU."""
+        if self._encoder is None:
+            try:
+                from sentence_transformers import SentenceTransformer
+                model_name = "sentence-transformers/all-MiniLM-L6-v2"
+                logger.info(f"🤖 Initializing SentenceTransformer (CPU-only lazy load): {model_name}")
+                # Explicitly force CPU for HuggingFace Spaces compatibility
+                self._encoder = SentenceTransformer(model_name, device="cpu")
+            except Exception as e:
+                logger.error(f"❌ Failed to lazy-load SentenceTransformer: {e}")
+                self.semantic_active = False
+                return None
+        return self._encoder
+
     def load(self) -> None:
         """
-        Load RAG artifacts. 
-        Prioritizes metadata so that fallback search is always available.
-        Does not crash if FAISS or SentenceTransformer fails to load.
+        Load RAG metadata and FAISS index.
+        The transformer model (encoder) is now lazy-loaded on first search.
         """
         metadata_file = self.index_dir / "metadata.json"
         index_file = self.index_dir / "index.faiss"
@@ -65,9 +79,8 @@ class MedQuadRetriever:
             self.loaded = False
             return
 
-        # 2. LOAD FAISS AND ENCODER (OPTIONAL FOR SEMANTIC SEARCH)
+        # 2. LOAD FAISS (OPTIONAL)
         try:
-            # Check if dependencies are available
             if faiss is None:
                 logger.warning("⚠️ FAISS not installed. Semantic search disabled.")
                 return
@@ -76,20 +89,15 @@ class MedQuadRetriever:
                 logger.warning(f"⚠️ FAISS index not found at {index_file}. Semantic search disabled.")
                 return
 
-            # Attempt to load FAISS
             logger.info(f"🔍 Loading FAISS index from {index_file}")
             self.index = faiss.read_index(str(index_file))
-
-            # Attempt to load SentenceTransformer
-            from sentence_transformers import SentenceTransformer
-            model_name = "sentence-transformers/all-MiniLM-L6-v2"
-            logger.info(f"🤖 Initializing SentenceTransformer: {model_name}")
-            self.encoder = SentenceTransformer(model_name)
             
+            # We don't load the encoder here anymore. 
+            # We just mark that we are ready for semantic search if encoder loads later.
             self.semantic_active = True
-            logger.info("✅ SEMANTIC RAG LOADED (FAISS + BERT)")
+            logger.info("✅ FAISS INDEX LOADED (Encoder will lazy-load on first query)")
         except Exception as e:
-            logger.error(f"⚠️ Could not initialize Semantic RAG: {e}. Using keyword fallback.", exc_info=True)
+            logger.error(f"⚠️ Could not load FAISS: {e}. Using keyword fallback.", exc_info=True)
             self.semantic_active = False
 
     def search(self, query: str, top_k: int = 3) -> list[RetrievedDocument]:
@@ -101,17 +109,24 @@ class MedQuadRetriever:
             logger.error("Attempted to search while retriever not loaded.")
             return []
 
-        if self.semantic_active and self.index is not None and self.encoder is not None:
-            try:
-                return self._semantic_search(query, top_k)
-            except Exception as e:
-                logger.error(f"Semantic search failed: {e}. Falling back to keywords.", exc_info=True)
+        # Try semantic search if FAISS is active
+        if self.semantic_active and self.index is not None:
+            encoder = self._get_encoder()
+            if encoder is not None:
+                try:
+                    return self._semantic_search(query, top_k)
+                except Exception as e:
+                    logger.error(f"Semantic search failed: {e}. Falling back to keywords.", exc_info=True)
         
         return self._keyword_fallback_search(query, top_k)
 
     def _semantic_search(self, query: str, top_k: int = 3) -> list[RetrievedDocument]:
-        """Perform semantic search using FAISS and BERT embeddings."""
-        embedding = self.encoder.encode([query], normalize_embeddings=True)
+        """Perform semantic search using FAISS and lazy-loaded BERT embeddings."""
+        encoder = self._get_encoder()
+        if encoder is None:
+            raise RuntimeError("Encoder failed to load.")
+            
+        embedding = encoder.encode([query], normalize_embeddings=True)
         scores, indices = self.index.search(np.asarray(embedding, dtype="float32"), top_k)
 
         results: list[RetrievedDocument] = []

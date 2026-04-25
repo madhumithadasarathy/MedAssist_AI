@@ -45,15 +45,15 @@ def startup_event():
     
     logger.info("🚀 STARTUP TRIGGERED")
     
-    # Path resolution inside Docker (assume WORKDIR is /app, main.py is in app/)
+    # Path resolution
     BASE_DIR = Path(__file__).resolve().parent
     models_dir = BASE_DIR / "models"
     
     logger.info(f"📂 BASE_DIR: {BASE_DIR}")
     logger.info(f"📂 MODELS_DIR: {models_dir}")
 
-    model_path = models_dir / "trained_model.joblib"
-    encoder_path = models_dir / "label_encoder.joblib"
+    model_path = settings.model_path
+    encoder_path = settings.label_encoder_path
     faiss_path = settings.faiss_index_path
 
     logger.info(f"📂 MODEL PATH: {model_path} | EXISTS: {model_path.exists()}")
@@ -61,27 +61,15 @@ def startup_event():
     logger.info(f"📂 FAISS PATH: {faiss_path} | EXISTS: {faiss_path.exists()}")
 
     try:
-        # Load Classifier
-        if model_path.exists():
-            classifier.load()
-            model_loaded = classifier.loaded
-            if model_loaded:
-                logger.info("✅ MODEL LOADED")
-            else:
-                logger.error("❌ CLASSIFIER OBJECT FAILED TO INITIALIZE ARTIFACTS")
-        else:
-            logger.error(f"❌ MODEL FILE NOT FOUND: {model_path}")
-
-        # Load RAG (Includes semantic + keyword fallback)
+        # Load Classifier (Lightweight sklearn artifacts)
+        classifier.load()
+        model_loaded = classifier.loaded
+        
+        # Load RAG (Metadata + FAISS, encoder is lazy-loaded)
         retriever.load()
         rag_loaded = retriever.loaded
-        if rag_loaded:
-            if retriever.semantic_active:
-                logger.info("✅ RAG LOADED (Semantic)")
-            else:
-                logger.info("✅ RAG LOADED (Keyword Fallback)")
-        else:
-            logger.error("❌ RAG FAILED TO INITIALIZE COMPLETELY")
+        
+        logger.info(f"✅ Startup Complete. Models: {model_loaded}, RAG: {rag_loaded}")
 
     except Exception as e:
         logger.error(f"🔥 ERROR DURING STARTUP: {e}", exc_info=True)
@@ -125,7 +113,12 @@ def ready() -> dict:
 
 @app.get("/", response_model=StatusResponse)
 def root() -> StatusResponse:
-    return StatusResponse(name=settings.app_name, status="ok", version=settings.app_version)
+    """Root health check endpoint for HuggingFace Spaces."""
+    return StatusResponse(
+        name=settings.app_name, 
+        status="ok", 
+        version=settings.app_version
+    )
 
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
