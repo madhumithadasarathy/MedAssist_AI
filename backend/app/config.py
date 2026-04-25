@@ -6,11 +6,11 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
-BASE_DIR = Path(__file__).resolve().parents[2]
-APP_DIR = BASE_DIR / "backend" / "app"
-DATA_DIR = BASE_DIR / "backend" / "data"
-MODELS_DIR = APP_DIR / "models"
+# Base directory for the app package (backend/app/)
+BASE_DIR = Path(__file__).resolve().parent
+MODELS_DIR = BASE_DIR / "models"
+# data/ is a sibling of the app/ directory inside backend/
+DATA_DIR = BASE_DIR.parent / "data"
 
 
 class Settings(BaseSettings):
@@ -23,14 +23,18 @@ class Settings(BaseSettings):
             "http://127.0.0.1:3000",
         ]
     )
+    
+    # Corrected Model Paths
     model_path: Path = MODELS_DIR / "trained_model.joblib"
     label_encoder_path: Path = MODELS_DIR / "label_encoder.joblib"
     faiss_index_path: Path = MODELS_DIR / "medquad_index"
+    
+    # Dataset Paths
     medquad_processed_path: Path = DATA_DIR / "medquad_processed.csv"
     min_symptom_length: int = 12
 
     model_config = SettingsConfigDict(
-        env_file=BASE_DIR / "backend" / ".env",
+        env_file=BASE_DIR.parent / ".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
