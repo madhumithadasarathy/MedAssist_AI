@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .classifier import Prediction
-from .rag import RetrievedDocument
+from .retriever import RetrievedDocument
 from .safety import DISCLAIMER_TEXT, SafetyResult
 
 

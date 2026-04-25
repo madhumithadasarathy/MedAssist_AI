@@ -25,7 +25,7 @@ from backend.app.config import get_settings  # noqa: E402
 def main() -> None:
     settings = get_settings()
     input_path = settings.medquad_processed_path
-    output_dir = settings.medquad_index_dir
+    output_dir = settings.faiss_index_path
 
     if not input_path.exists():
         raise FileNotFoundError(
