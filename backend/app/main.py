@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
-# Global instances (Unloaded at startup)
+# Global instances (Lazy loading enabled)
 classifier = SymptomClassifier()
 retriever = MedQuadRetriever()
 
@@ -34,8 +34,15 @@ app = FastAPI(title=settings.app_name, version=settings.app_version)
 
 @app.on_event("startup")
 async def startup_event():
-    """App starts instantly. Heavy loading is deferred to first request."""
-    logger.info("🚀 APP STARTED (HuggingFace Mode: Lazy Loading Enabled)")
+    """Startup check. We attempt load but do not crash if it fails validation."""
+    logger.info("🚀 APP STARTUP: performing preliminary model validation...")
+    try:
+        classifier.load()
+    except Exception as e:
+        logger.error(f"🚨 STARTUP VALIDATION FAILED: {e}")
+        # We continue so the API stays up (to serve health and error messages)
+    
+    logger.info("✅ Startup sequence complete.")
 
 # CORS
 origins = settings.allowed_origins
@@ -55,7 +62,7 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Failed request to {request.url.path}: {exc}", exc_info=True)
+    logger.error(f"Unhandled error for {request.url.path}: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
         content={"error": {"message": str(exc), "code": "INTERNAL_ERROR"}}
@@ -71,17 +78,16 @@ def root():
 def health() -> HealthResponse:
     """Health check reflecting dynamic loading status."""
     return HealthResponse(
-        status="healthy",
+        status="healthy" if classifier.loaded and retriever.loaded else "degraded",
         model_loaded=classifier.loaded,
         rag_loaded=retriever.loaded,
     )
 
 # API Endpoints
 @app.post(f"{settings.api_prefix}/predict", response_model=PredictResponse)
-def predict(payload: ChatRequest) -> PredictResponse:
+def predict(payload: ChatRequest):
     message = payload.message.strip()
     try:
-        # classifier.predict_top_k will trigger lazy load if needed
         predictions, _ = classifier.predict_top_k(message, k=3)
         return PredictResponse(
             user_message=message,
@@ -90,15 +96,22 @@ def predict(payload: ChatRequest) -> PredictResponse:
                 {"name": item.condition, "confidence": item.confidence} for item in predictions
             ],
         )
-    except Exception as exc:
-        logger.error(f"Prediction failed: {exc}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Prediction failed")
+    except Exception as e:
+        # Step 4 Implementation
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "error",
+                "message": "Model not ready",
+                "details": str(e),
+                "action": "Retrain model with matching sklearn version"
+            }
+        )
 
 @app.post(f"{settings.api_prefix}/search-medquad", response_model=SearchResponse)
 def search_medquad(payload: ChatRequest) -> SearchResponse:
     message = payload.message.strip()
     try:
-        # retriever.search will trigger lazy load if needed
         docs = retriever.search(message, top_k=3)
         return SearchResponse(
             query=message,
@@ -106,16 +119,14 @@ def search_medquad(payload: ChatRequest) -> SearchResponse:
             results=[{"question": d.question, "answer": d.answer, "score": d.score} for d in docs],
         )
     except Exception as exc:
-        logger.error(f"Search failed: {exc}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Search failed")
+        raise HTTPException(status_code=500, detail=str(exc))
 
 @app.post("/api/chat", response_model=ChatResponse)
-def chat(payload: ChatRequest) -> ChatResponse:
+def chat(payload: ChatRequest):
     message = payload.message.strip()
     safety = detect_red_flags(message)
 
     try:
-        # Lazy loading happens here on demand
         predictions, why_tokens = classifier.predict_top_k(message, k=3)
         docs = retriever.search(message, top_k=3)
         
@@ -130,6 +141,15 @@ def chat(payload: ChatRequest) -> ChatResponse:
             response=f"Based on your symptoms, possible conditions may include {', '.join([p.condition for p in predictions])}.",
             disclaimer=build_disclaimer()
         )
-    except Exception as exc:
-        logger.error(f"Chat failed: {exc}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Chat processing failed")
+    except Exception as e:
+        # Step 4 Implementation
+        logger.error(f"Chat execution failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "error",
+                "message": "Model not ready",
+                "details": str(e),
+                "action": "Retrain model with matching sklearn version"
+            }
+        )
