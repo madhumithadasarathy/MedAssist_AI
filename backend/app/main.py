@@ -72,16 +72,16 @@ def startup_event():
         else:
             logger.error(f"❌ MODEL FILE NOT FOUND: {model_path}")
 
-        # Load RAG
-        if faiss_path.exists():
-            retriever.load()
-            rag_loaded = retriever.loaded
-            if rag_loaded:
-                logger.info("✅ RAG LOADED")
+        # Load RAG (Includes semantic + keyword fallback)
+        retriever.load()
+        rag_loaded = retriever.loaded
+        if rag_loaded:
+            if retriever.semantic_active:
+                logger.info("✅ RAG LOADED (Semantic)")
             else:
-                logger.error("❌ RAG OBJECT FAILED TO INITIALIZE INDEX")
+                logger.info("✅ RAG LOADED (Keyword Fallback)")
         else:
-            logger.error(f"❌ FAISS INDEX NOT FOUND: {faiss_path}")
+            logger.error("❌ RAG FAILED TO INITIALIZE COMPLETELY")
 
     except Exception as e:
         logger.error(f"🔥 ERROR DURING STARTUP: {e}", exc_info=True)

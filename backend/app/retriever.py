@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sentence_transformers import SentenceTransformer
 
 from .config import get_settings
 
@@ -32,62 +32,85 @@ class RetrievedDocument:
 class MedQuadRetriever:
     def __init__(self, index_dir: Path | None = None) -> None:
         self.settings = get_settings()
-        # Use settings.faiss_index_path (renamed in config.py) or provided index_dir
         self.index_dir = index_dir or self.settings.faiss_index_path
         self.index = None
         self.metadata: list[dict[str, str]] = []
-        self.encoder: SentenceTransformer | None = None
+        self.encoder = None # Deferred loading
         self.loaded = False
+        self.semantic_active = False
         self.load()
 
     def load(self) -> None:
-        """Load the FAISS index and metadata.json with robust error handling."""
-        try:
-            # Ensure correct path usage
-            index_file = self.index_dir / "index.faiss"
-            metadata_file = self.index_dir / "metadata.json"
+        """
+        Load RAG artifacts. 
+        Prioritizes metadata so that fallback search is always available.
+        Does not crash if FAISS or SentenceTransformer fails to load.
+        """
+        metadata_file = self.index_dir / "metadata.json"
+        index_file = self.index_dir / "index.faiss"
 
-            if faiss is None:
-                logger.error("❌ FAISS library is not installed.")
+        # 1. LOAD METADATA (MANDATORY FOR RAG)
+        try:
+            if metadata_file.exists():
+                logger.info(f"📂 Loading RAG metadata from {metadata_file}")
+                self.metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+                self.loaded = True # RAG is now at least partially functional
+                logger.info("✅ METADATA LOADED (Fallback search ready)")
+            else:
+                logger.error(f"❌ RAG metadata file NOT FOUND: {metadata_file}")
                 self.loaded = False
+                return
+        except Exception as e:
+            logger.error(f"🔥 Critical error loading RAG metadata: {e}", exc_info=True)
+            self.loaded = False
+            return
+
+        # 2. LOAD FAISS AND ENCODER (OPTIONAL FOR SEMANTIC SEARCH)
+        try:
+            # Check if dependencies are available
+            if faiss is None:
+                logger.warning("⚠️ FAISS not installed. Semantic search disabled.")
                 return
 
             if not index_file.exists():
-                logger.error(f"❌ FAISS index file not found: {index_file}")
-                self.loaded = False
+                logger.warning(f"⚠️ FAISS index not found at {index_file}. Semantic search disabled.")
                 return
 
-            if not metadata_file.exists():
-                logger.error(f"❌ RAG metadata file not found: {metadata_file}")
-                self.loaded = False
-                return
-
-            # Load FAISS index using faiss.read_index()
-            logger.info(f"Loading FAISS index from {index_file}")
+            # Attempt to load FAISS
+            logger.info(f"🔍 Loading FAISS index from {index_file}")
             self.index = faiss.read_index(str(index_file))
-            
-            # Load metadata.json
-            logger.info(f"Loading RAG metadata from {metadata_file}")
-            self.metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
-            
-            # Initialize the encoder
+
+            # Attempt to load SentenceTransformer
+            from sentence_transformers import SentenceTransformer
             model_name = "sentence-transformers/all-MiniLM-L6-v2"
-            logger.info(f"Initializing SentenceTransformer: {model_name}")
+            logger.info(f"🤖 Initializing SentenceTransformer: {model_name}")
             self.encoder = SentenceTransformer(model_name)
             
-            self.loaded = True
-            logger.info("✅ RAG LOADED")
+            self.semantic_active = True
+            logger.info("✅ SEMANTIC RAG LOADED (FAISS + BERT)")
         except Exception as e:
-            logger.error(f"❌ Failed to load MedQuadRetriever: {str(e)}", exc_info=True)
-            self.loaded = False
+            logger.error(f"⚠️ Could not initialize Semantic RAG: {e}. Using keyword fallback.", exc_info=True)
+            self.semantic_active = False
 
     def search(self, query: str, top_k: int = 3) -> list[RetrievedDocument]:
-        """Perform semantic search against the FAISS index."""
-        if not self.loaded or self.index is None or self.encoder is None:
-            raise FileNotFoundError(
-                "RAG index artifacts were not found or loaded."
-            )
+        """
+        Search for relevant documents. 
+        Uses semantic search if available, otherwise falls back to keyword overlap.
+        """
+        if not self.loaded:
+            logger.error("Attempted to search while retriever not loaded.")
+            return []
 
+        if self.semantic_active and self.index is not None and self.encoder is not None:
+            try:
+                return self._semantic_search(query, top_k)
+            except Exception as e:
+                logger.error(f"Semantic search failed: {e}. Falling back to keywords.", exc_info=True)
+        
+        return self._keyword_fallback_search(query, top_k)
+
+    def _semantic_search(self, query: str, top_k: int = 3) -> list[RetrievedDocument]:
+        """Perform semantic search using FAISS and BERT embeddings."""
         embedding = self.encoder.encode([query], normalize_embeddings=True)
         scores, indices = self.index.search(np.asarray(embedding, dtype="float32"), top_k)
 
@@ -101,6 +124,42 @@ class MedQuadRetriever:
                     question=row.get("question", ""),
                     answer=row.get("answer", ""),
                     source=row.get("source", "MedQuAD"),
+                    score=round(float(score), 4),
+                    focus=row.get("focus") or None,
+                    qtype=row.get("qtype") or None,
+                )
+            )
+        return results
+
+    def _keyword_fallback_search(self, query: str, top_k: int = 3) -> list[RetrievedDocument]:
+        """
+        Perform a simple keyword overlap search over question and focus fields.
+        Used as a robust fallback when ML models fail to load.
+        """
+        logger.info(f"⚙️ Running keyword fallback search for: '{query}'")
+        query_terms = set(re.findall(r'\w+', query.lower()))
+        if not query_terms:
+            return []
+
+        scored_results = []
+        for row in self.metadata:
+            text_to_match = f"{row.get('question', '')} {row.get('focus', '')} {row.get('answer', '')[:200]}".lower()
+            match_count = sum(1 for term in query_terms if term in text_to_match)
+            
+            if match_count > 0:
+                score = match_count / len(query_terms)
+                scored_results.append((score, row))
+
+        # Sort by score descending
+        scored_results.sort(key=lambda x: x[0], reverse=True)
+
+        results: list[RetrievedDocument] = []
+        for score, row in scored_results[:top_k]:
+            results.append(
+                RetrievedDocument(
+                    question=row.get("question", ""),
+                    answer=row.get("answer", ""),
+                    source=row.get("source", "MedQuAD (Fallback)"),
                     score=round(float(score), 4),
                     focus=row.get("focus") or None,
                     qtype=row.get("qtype") or None,
