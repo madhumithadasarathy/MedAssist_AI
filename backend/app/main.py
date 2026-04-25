@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .classifier import SymptomClassifier
 from .config import get_settings
-from .rag import MedQuadRetriever
+from .retriever import MedQuadRetriever
 from .response_builder import build_assistant_response, build_disclaimer
 from .safety import detect_red_flags
 from .schemas import (
@@ -54,7 +54,7 @@ def startup_event():
 
     model_path = models_dir / "trained_model.joblib"
     encoder_path = models_dir / "label_encoder.joblib"
-    faiss_path = models_dir / "medquad_index"
+    faiss_path = settings.faiss_index_path
 
     logger.info(f"📂 MODEL PATH: {model_path} | EXISTS: {model_path.exists()}")
     logger.info(f"📂 ENCODER PATH: {encoder_path} | EXISTS: {encoder_path.exists()}")
