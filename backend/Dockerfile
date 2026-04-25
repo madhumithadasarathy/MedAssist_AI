@@ -9,6 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install dependencies first for better caching
 COPY requirements.txt .
+# Install CPU-only PyTorch first so sentence-transformers does not pull in CUDA variants
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Cache bust Argument
