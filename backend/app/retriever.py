@@ -33,12 +33,16 @@ class MedQuadRetriever:
     def __init__(self, index_dir: Path | None = None) -> None:
         self.settings = get_settings()
         self.index_dir = index_dir or self.settings.faiss_index_path
-        self.index = None
-        self.metadata: list[dict[str, str]] = []
+        self._index = None
+        self._metadata: list[dict[str, str]] = []
         self._encoder = None # Lazy loading
         self.loaded = False
         self.semantic_active = False
-        self.load()
+
+    def _ensure_loaded(self) -> None:
+        """Lazy loader for RAG metadata and index."""
+        if not self.loaded:
+            self.load()
 
     def _get_encoder(self):
         """Lazy loading of SentenceTransformer on CPU."""
@@ -58,18 +62,18 @@ class MedQuadRetriever:
     def load(self) -> None:
         """
         Load RAG metadata and FAISS index.
-        The transformer model (encoder) is now lazy-loaded on first search.
+        The transformer model (encoder) is lazy-loaded on first search.
         """
         metadata_file = self.index_dir / "metadata.json"
         index_file = self.index_dir / "index.faiss"
 
-        # 1. LOAD METADATA (MANDATORY FOR RAG)
+        # 1. LOAD METADATA
         try:
             if metadata_file.exists():
                 logger.info(f"📂 Loading RAG metadata from {metadata_file}")
-                self.metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
-                self.loaded = True # RAG is now at least partially functional
-                logger.info("✅ METADATA LOADED (Fallback search ready)")
+                self._metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+                self.loaded = True 
+                logger.info("✅ RAG METADATA LOADED")
             else:
                 logger.error(f"❌ RAG metadata file NOT FOUND: {metadata_file}")
                 self.loaded = False
@@ -79,23 +83,16 @@ class MedQuadRetriever:
             self.loaded = False
             return
 
-        # 2. LOAD FAISS (OPTIONAL)
+        # 2. LOAD FAISS
         try:
-            if faiss is None:
-                logger.warning("⚠️ FAISS not installed. Semantic search disabled.")
-                return
-
-            if not index_file.exists():
-                logger.warning(f"⚠️ FAISS index not found at {index_file}. Semantic search disabled.")
-                return
-
-            logger.info(f"🔍 Loading FAISS index from {index_file}")
-            self.index = faiss.read_index(str(index_file))
-            
-            # We don't load the encoder here anymore. 
-            # We just mark that we are ready for semantic search if encoder loads later.
-            self.semantic_active = True
-            logger.info("✅ FAISS INDEX LOADED (Encoder will lazy-load on first query)")
+            if faiss is not None and index_file.exists():
+                logger.info(f"🔍 Loading FAISS index from {index_file}")
+                self._index = faiss.read_index(str(index_file))
+                self.semantic_active = True
+                logger.info("✅ FAISS INDEX LOADED")
+            else:
+                logger.warning("⚠️ FAISS index or library missing. Semantic search disabled.")
+                self.semantic_active = False
         except Exception as e:
             logger.error(f"⚠️ Could not load FAISS: {e}. Using keyword fallback.", exc_info=True)
             self.semantic_active = False
@@ -105,12 +102,13 @@ class MedQuadRetriever:
         Search for relevant documents. 
         Uses semantic search if available, otherwise falls back to keyword overlap.
         """
+        self._ensure_loaded()
         if not self.loaded:
             logger.error("Attempted to search while retriever not loaded.")
             return []
 
         # Try semantic search if FAISS is active
-        if self.semantic_active and self.index is not None:
+        if self.semantic_active and self._index is not None:
             encoder = self._get_encoder()
             if encoder is not None:
                 try:
@@ -123,17 +121,17 @@ class MedQuadRetriever:
     def _semantic_search(self, query: str, top_k: int = 3) -> list[RetrievedDocument]:
         """Perform semantic search using FAISS and lazy-loaded BERT embeddings."""
         encoder = self._get_encoder()
-        if encoder is None:
-            raise RuntimeError("Encoder failed to load.")
+        if encoder is None or self._index is None:
+            raise RuntimeError("Required semantic components are missing.")
             
         embedding = encoder.encode([query], normalize_embeddings=True)
-        scores, indices = self.index.search(np.asarray(embedding, dtype="float32"), top_k)
+        scores, indices = self._index.search(np.asarray(embedding, dtype="float32"), top_k)
 
         results: list[RetrievedDocument] = []
         for score, idx in zip(scores[0], indices[0], strict=False):
-            if idx < 0 or idx >= len(self.metadata):
+            if idx < 0 or idx >= len(self._metadata):
                 continue
-            row = self.metadata[idx]
+            row = self._metadata[idx]
             results.append(
                 RetrievedDocument(
                     question=row.get("question", ""),
@@ -149,7 +147,6 @@ class MedQuadRetriever:
     def _keyword_fallback_search(self, query: str, top_k: int = 3) -> list[RetrievedDocument]:
         """
         Perform a simple keyword overlap search over question and focus fields.
-        Used as a robust fallback when ML models fail to load.
         """
         logger.info(f"⚙️ Running keyword fallback search for: '{query}'")
         query_terms = set(re.findall(r'\w+', query.lower()))
@@ -157,7 +154,7 @@ class MedQuadRetriever:
             return []
 
         scored_results = []
-        for row in self.metadata:
+        for row in self._metadata:
             text_to_match = f"{row.get('question', '')} {row.get('focus', '')} {row.get('answer', '')[:200]}".lower()
             match_count = sum(1 for term in query_terms if term in text_to_match)
             
@@ -165,7 +162,6 @@ class MedQuadRetriever:
                 score = match_count / len(query_terms)
                 scored_results.append((score, row))
 
-        # Sort by score descending
         scored_results.sort(key=lambda x: x[0], reverse=True)
 
         results: list[RetrievedDocument] = []
@@ -181,7 +177,3 @@ class MedQuadRetriever:
                 )
             )
         return results
-
-
-def load_processed_medquad(csv_path: Path) -> pd.DataFrame:
-    return pd.read_csv(csv_path).fillna("")

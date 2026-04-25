@@ -1,11 +1,7 @@
 from __future__ import annotations
 
 import logging
-import os
-import sys
-import time
 from pathlib import Path
-from collections import defaultdict
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,50 +25,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
+
+# Global instances (Unloaded at startup)
 classifier = SymptomClassifier()
 retriever = MedQuadRetriever()
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
 
-# Global status flags
-model_loaded = False
-rag_loaded = False
-
 @app.on_event("startup")
-def startup_event():
-    """Synchronous startup event to ensure artifacts load before traffic."""
-    global model_loaded, rag_loaded
-    
-    logger.info("🚀 STARTUP TRIGGERED")
-    
-    # Path resolution
-    BASE_DIR = Path(__file__).resolve().parent
-    models_dir = BASE_DIR / "models"
-    
-    logger.info(f"📂 BASE_DIR: {BASE_DIR}")
-    logger.info(f"📂 MODELS_DIR: {models_dir}")
-
-    model_path = settings.model_path
-    encoder_path = settings.label_encoder_path
-    faiss_path = settings.faiss_index_path
-
-    logger.info(f"📂 MODEL PATH: {model_path} | EXISTS: {model_path.exists()}")
-    logger.info(f"📂 ENCODER PATH: {encoder_path} | EXISTS: {encoder_path.exists()}")
-    logger.info(f"📂 FAISS PATH: {faiss_path} | EXISTS: {faiss_path.exists()}")
-
-    try:
-        # Load Classifier (Lightweight sklearn artifacts)
-        classifier.load()
-        model_loaded = classifier.loaded
-        
-        # Load RAG (Metadata + FAISS, encoder is lazy-loaded)
-        retriever.load()
-        rag_loaded = retriever.loaded
-        
-        logger.info(f"✅ Startup Complete. Models: {model_loaded}, RAG: {rag_loaded}")
-
-    except Exception as e:
-        logger.error(f"🔥 ERROR DURING STARTUP: {e}", exc_info=True)
+async def startup_event():
+    """App starts instantly. Heavy loading is deferred to first request."""
+    logger.info("🚀 APP STARTED (HuggingFace Mode: Lazy Loading Enabled)")
 
 # CORS
 origins = settings.allowed_origins
@@ -98,61 +61,27 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"error": {"message": str(exc), "code": "INTERNAL_ERROR"}}
     )
 
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    logger.info(f"Incoming {request.method} request to {request.url.path}")
-    response = await call_next(request)
-    return response
-
 # Diagnostic/Health Routes
-@app.get("/ready")
-def ready() -> dict:
-    if model_loaded and rag_loaded:
-        return {"status": "ok"}
-    raise HTTPException(status_code=503, detail="Services not fully loaded yet")
-
-@app.get("/", response_model=StatusResponse)
-def root() -> StatusResponse:
-    """Root health check endpoint for HuggingFace Spaces."""
-    return StatusResponse(
-        name=settings.app_name, 
-        status="ok", 
-        version=settings.app_version
-    )
+@app.get("/")
+def root():
+    """Standard health check for HuggingFace Spaces."""
+    return {"status": "ok", "app": settings.app_name, "version": settings.app_version}
 
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
-    """Health check reflecting actual loading status."""
-    logger.info(f"Health check: Model={model_loaded}, RAG={rag_loaded}")
+    """Health check reflecting dynamic loading status."""
     return HealthResponse(
-        status="healthy" if model_loaded and rag_loaded else "degraded",
-        model_loaded=model_loaded,
-        rag_loaded=rag_loaded,
+        status="healthy",
+        model_loaded=classifier.loaded,
+        rag_loaded=retriever.loaded,
     )
-
-@app.get("/debug-paths")
-def debug_paths():
-    """Diagnostic endpoint to inspect file system inside container."""
-    BASE_DIR = Path(__file__).resolve().parent
-    models_dir = BASE_DIR / "models"
-    files = []
-    if models_dir.exists():
-        files = os.listdir(str(models_dir))
-    
-    return {
-        "base_dir": str(BASE_DIR),
-        "models_dir_exists": models_dir.exists(),
-        "files": files
-    }
 
 # API Endpoints
 @app.post(f"{settings.api_prefix}/predict", response_model=PredictResponse)
 def predict(payload: ChatRequest) -> PredictResponse:
     message = payload.message.strip()
-    if not model_loaded:
-        raise HTTPException(status_code=503, detail="Model artifacts not loaded")
-    
     try:
+        # classifier.predict_top_k will trigger lazy load if needed
         predictions, _ = classifier.predict_top_k(message, k=3)
         return PredictResponse(
             user_message=message,
@@ -162,15 +91,14 @@ def predict(payload: ChatRequest) -> PredictResponse:
             ],
         )
     except Exception as exc:
+        logger.error(f"Prediction failed: {exc}", exc_info=True)
         raise HTTPException(status_code=500, detail="Prediction failed")
 
 @app.post(f"{settings.api_prefix}/search-medquad", response_model=SearchResponse)
 def search_medquad(payload: ChatRequest) -> SearchResponse:
     message = payload.message.strip()
-    if not rag_loaded:
-        raise HTTPException(status_code=503, detail="RAG system not loaded")
-    
     try:
+        # retriever.search will trigger lazy load if needed
         docs = retriever.search(message, top_k=3)
         return SearchResponse(
             query=message,
@@ -178,7 +106,8 @@ def search_medquad(payload: ChatRequest) -> SearchResponse:
             results=[{"question": d.question, "answer": d.answer, "score": d.score} for d in docs],
         )
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="Knowledge search failed")
+        logger.error(f"Search failed: {exc}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Search failed")
 
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(payload: ChatRequest) -> ChatResponse:
@@ -186,8 +115,9 @@ def chat(payload: ChatRequest) -> ChatResponse:
     safety = detect_red_flags(message)
 
     try:
+        # Lazy loading happens here on demand
         predictions, why_tokens = classifier.predict_top_k(message, k=3)
-        docs = retriever.search(message, top_k=3) if rag_loaded else []
+        docs = retriever.search(message, top_k=3)
         
         return ChatResponse(
             emergency=safety.emergency,
@@ -201,4 +131,5 @@ def chat(payload: ChatRequest) -> ChatResponse:
             disclaimer=build_disclaimer()
         )
     except Exception as exc:
+        logger.error(f"Chat failed: {exc}", exc_info=True)
         raise HTTPException(status_code=500, detail="Chat processing failed")
