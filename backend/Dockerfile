@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://
 
 # Install other dependencies
 COPY requirements.txt .
+# Install CPU-only PyTorch first so sentence-transformers does not pull in CUDA variants
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Cache bust Argument
